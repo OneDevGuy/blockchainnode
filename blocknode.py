@@ -225,7 +225,7 @@ def new_transaction():
     return jsonify(response), 201
 
 
-@app.route('/chain', methods=['GET'])
+@app.route('/', methods=['GET'])
 def full_chain():
     response = {
         'chain': blockchain.chain,
