@@ -14,7 +14,7 @@ class Blockchain:
         self.nodes = set()
 
         # Create the genesis block
-        self.new_block(previous_hash='1', proof=100)
+        self.new_block(previous_hash='Genesis Block', nonce=0)
 
     def register_node(self, address):
         """
@@ -50,8 +50,8 @@ class Blockchain:
             if block['previous_hash'] != last_block_hash:
                 return False
 
-            # Check that the Proof of Work is correct
-            if not self.valid_proof(last_block['proof'], block['proof'], last_block_hash):
+            # Check that the nonce of Work is correct
+            if not self.valid_nonce(last_block['nonce'], block['nonce'], last_block_hash):
                 return False
 
             last_block = block
@@ -91,19 +91,20 @@ class Blockchain:
 
         return False
 
-    def new_block(self, proof, previous_hash):
+    def new_block(self, nonce, previous_hash):
         """
         Create a new Block in the Blockchain
-        :param proof: The proof given by the Proof of Work algorithm
+        :param nonce: The nonce given by the proof of Work algorithm
         :param previous_hash: Hash of previous Block
         :return: New Block
         """
         block = {
-            'index': len(self.chain) + 1,
+            'hash': self.hash(self.chain),
+            'height': len(self.chain) + 1,
+            'tx': self.current_transactions,
             'timestamp': time(),
-            'transactions': self.current_transactions,
-            'proof': proof,
-            'previous_hash': previous_hash or self.hash(self.chain[-1]),
+            'nonce': nonce,
+            'previous_hash': previous_hash,
         }
 
         # Reset the current list of transactions
@@ -125,7 +126,7 @@ class Blockchain:
             'amount': amount,
         })
 
-        return self.last_block['index'] + 1
+        return self.last_block['height'] + 1
 
     @property
     def last_block(self):
@@ -149,17 +150,17 @@ class Blockchain:
         :param last_block: <dict> last Block
         :return: <int>
         """
-        last_proof = last_block['proof']
+        last_nonce = last_block['nonce']
         last_hash = self.hash(last_block)
 
-        proof = 0
-        while self.valid_proof(last_proof, proof, last_hash) is False:
-            proof += 1
+        nonce = 0
+        while self.valid_proof(last_nonce, nonce, last_hash) is False:
+            nonce += 1
 
-        return proof
+        return nonce
 
     @staticmethod
-    def valid_proof(last_proof, proof, last_hash):
+    def valid_proof(last_nonce, nonce, last_hash):
         """
         Validates the Proof
         :param last_proof: <int> Previous Proof
@@ -167,7 +168,7 @@ class Blockchain:
         :param last_hash: <str> The hash of the Previous Block
         :return: <bool> True if correct, False if not.
         """
-        guess = f'{last_proof}{proof}{last_hash}'.encode()
+        guess = f'{last_nonce}{nonce}{last_hash}'.encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
         return guess_hash[:4] == "0000"
 
@@ -184,9 +185,9 @@ blockchain = Blockchain()
 
 @app.route('/mine', methods=['GET'])
 def mine():
-    # We run the proof of work algorithm to get the next proof...
+    # We run the proof of work algorithm to get the next nonce...
     last_block = blockchain.last_block
-    proof = blockchain.proof_of_work(last_block)
+    nonce = blockchain.proof_of_work(last_block)
 
     # We must receive a reward for finding the proof.
     # The sender is "0" to signify that this node has mined a new coin.
@@ -197,14 +198,16 @@ def mine():
     )
 
     # Forge the new Block by adding it to the chain
-    previous_hash = blockchain.hash(last_block)
-    block = blockchain.new_block(proof, previous_hash)
+    previous_hash = blockchain.last_block['hash']
+    block = blockchain.new_block(nonce, previous_hash)
 
     response = {
         'message': "New Block Forged",
-        'index': block['index'],
-        'transactions': block['transactions'],
-        'proof': block['proof'],
+        'hash': block['hash'],
+        'height': block['height'],
+        'tx': block['tx'],
+        'time': block['timestamp'],
+        'nonce': block['nonce'],
         'previous_hash': block['previous_hash'],
     }
     return jsonify(response), 200
