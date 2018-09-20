@@ -73,7 +73,7 @@ class Blockchain:
 
         # Grab and verify the chains from all the nodes in our network
         for node in neighbours:
-            response = requests.get(f'http://{node}/chain')
+            response = requests.get(f'http://{node}')
 
             if response.status_code == 200:
                 length = response.json()['length']
@@ -174,6 +174,7 @@ class Blockchain:
 
 # Instantiate the Node
 app = Flask(__name__)
+app.config.from_object('settings')
 
 # Generate a globally unique address for this node
 node_identifier = str(uuid4()).replace('-', '')
