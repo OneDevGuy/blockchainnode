@@ -1,3 +1,3 @@
 # Python Blockchain Demo
 
-[See a live demo on repl.it](https://pyblockchainnode.onedevguy.repl.co)
+[See a live demo on repl.it](https://repl.it/@OneDevGuy/PyBlockchainNode)
